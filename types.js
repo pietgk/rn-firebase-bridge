@@ -66,3 +66,20 @@ export type DataSnapshotDescriptor = {
     uuid: string;
     priority: number;
 };
+
+export type StorageReference = {
+    child(pathString:string) : StorageReference;
+    writeToFile(localFileURL: string) : Promise;
+}
+
+export type StorageReferenceDescriptor = {
+    bucket: string;
+    fullPath: string;
+    name: string;
+    storageFileUrl: string;
+}
+
+// export type Storage = {
+//     downloadURLWithCompletion(storageFileURL: string) : Promise;
+//     dataWithMaxSize(storageFileURL: string, maxSize: number) : Promise;
+// }

@@ -100,3 +100,25 @@ RCT_EXTERN_METHOD(signInAnonymously:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 @end
 
+@interface RCT_EXTERN_MODULE(FirebaseBridgeStorage, NSObject)
+
+RCT_EXTERN_METHOD(child:(NSString)storageFileUrl
+                  path:(NSString)path
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(writeToFile:(NSString)storageFileUrl
+                  localFileUrl:(NSString)localFileUrl
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(downloadUrlWithCompletion:(NSString)storageFileUrl
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(dataWithMaxSize:(NSString)storageFileUrl
+                  maxSize:(int64_t)maxSize
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+@end
