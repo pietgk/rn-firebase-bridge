@@ -83,3 +83,8 @@ export type StorageReferenceDescriptor = {
 //     downloadURLWithCompletion(storageFileURL: string) : Promise;
 //     dataWithMaxSize(storageFileURL: string, maxSize: number) : Promise;
 // }
+
+type AuthCredential = {
+    id: string;
+    provider: string;
+};
