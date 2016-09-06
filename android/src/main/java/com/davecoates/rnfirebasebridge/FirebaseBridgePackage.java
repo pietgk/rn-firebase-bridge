@@ -17,10 +17,11 @@ import com.davecoates.rnfirebasebridge.FirebaseBridgeTwitterAuthProvider;
 import com.davecoates.rnfirebasebridge.FirebaseBridgeGoogleAuthProvider;
 import com.davecoates.rnfirebasebridge.FirebaseBridgeGithubAuthProvider;
 import com.davecoates.rnfirebasebridge.FirebaseBridgeDatabase;
+import com.davecoates.rnfirebasebridge.FirebaseBridgeStorage;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
 
 public class FirebaseBridgePackage implements ReactPackage {
-
 
   @Override
   public List<Class<? extends JavaScriptModule>> createJSModules() {
@@ -43,6 +44,7 @@ public class FirebaseBridgePackage implements ReactPackage {
     modules.add(new FirebaseBridgeTwitterAuthProvider(reactContext));
     modules.add(new FirebaseBridgeGithubAuthProvider(reactContext));
     modules.add(new FirebaseBridgeDatabase(reactContext));
+    modules.add(new FirebaseBridgeStorage(reactContext));
 
     return modules;
   }

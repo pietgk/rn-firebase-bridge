@@ -149,6 +149,7 @@ RCT_EXTERN_METHOD(writeToFile:(NSString)storageFileUrl
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(downloadUrlWithCompletion:(NSString)storageFileUrl
+                  path:(NSString)path
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 

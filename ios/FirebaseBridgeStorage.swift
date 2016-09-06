@@ -40,6 +40,12 @@ class FirebaseBridgeStorage: NSObject { //, RCTInvalidating {
       "storageFileUrl": String("gs://\(ref.bucket)/\(ref.fullPath)"),
     ]
   }
+
+  func convertStorageUrl(URL:NSURL) -> Dictionary<String, String> {
+    return [
+      "storageUrl": URL.absoluteString
+    ]
+  }
   
   /**
    * Child of locationURL
@@ -85,13 +91,13 @@ class FirebaseBridgeStorage: NSObject { //, RCTInvalidating {
    *   or just want a URL to share, you can get the download URL for a file by calling the downloadURLWithCompletion: method on a storage reference.
    * - storageFileURL should be like gs://<your-firebase-storage-bucket>
    */
-  @objc func downloadUrlWithCompletion(storageFileUrl:String?, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
-    let storageFileRef = getRefFromUrl(storageFileUrl)
+  @objc func downloadUrlWithCompletion(storageFileUrl:String?, path: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    let storageFileRef = getRefFromUrl(storageFileUrl).child(path);
     storageFileRef.downloadURLWithCompletion { (URL, error) -> Void in
       if (error != nil) {
         reject("FirebaseBridgeStorage.downloadURLWithCompletion failed", error?.localizedDescription, error)
       } else {
-        resolve(URL)
+        resolve(self.convertStorageUrl(URL!))
       }
     }
   }
