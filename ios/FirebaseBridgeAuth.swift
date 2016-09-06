@@ -82,9 +82,7 @@ func authErrorCodeToString(code:FIRAuthErrorCode) -> String {
 
 
 @objc(FirebaseBridgeAuth)
-class FirebaseBridgeAuth: NSObject, RCTInvalidating {
-  
-  var bridge: RCTBridge!
+class FirebaseBridgeAuth: RCTEventEmitter, RCTInvalidating {
   
   func invalidate() {
     if let handle = self.authStateDidChangeListenerHandle {
@@ -94,17 +92,20 @@ class FirebaseBridgeAuth: NSObject, RCTInvalidating {
   
   override init() {
     super.init()
+    addAuthStateDidChangeListener()
+  }
+  
+  override func supportedEvents() -> [String]! {
+    return ["authStateDidChange"]
   }
   
   var authStateDidChangeListenerHandle:FIRAuthStateDidChangeListenerHandle?;
   @objc func addAuthStateDidChangeListener() {
     self.authStateDidChangeListenerHandle = FIRAuth.auth()?.addAuthStateDidChangeListener({ (auth:FIRAuth, user) in
       if (user == nil) {
-        self.bridge.eventDispatcher().sendAppEventWithName(
-          "authStateDidChange", body: [])
+        self.sendEventWithName("authStateDidChange", body: nil)
       } else {
-        self.bridge.eventDispatcher().sendAppEventWithName(
-          "authStateDidChange", body: ["user": userToDict(user!)])
+        self.sendEventWithName("authStateDidChange", body: userToDict(user!))
       }
     })
   }
@@ -183,6 +184,29 @@ class FirebaseBridgeAuth: NSObject, RCTInvalidating {
     }
   }
   
-    
+  @objc func signOut(resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    do {
+      try FIRAuth.auth()?.signOut();
+      resolve(nil)
+    } catch let error as NSError {
+      var code = ""
+      if let errorCode = FIRAuthErrorCode(rawValue: error.code) {
+        code = authErrorCodeToString(errorCode)
+      } else if let userInfo = error.userInfo as? Dictionary<String, AnyObject> {
+        code = userInfo["error_name"] as! String
+      }
+      reject(code, error.localizedDescription, error);
+    }
+  }
+  
+  @objc func getCurrentUser(resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    if let user = FIRAuth.auth()?.currentUser {
+      resolve(userToDict(user))
+    } else {
+      resolve(nil)
+    }
+  }
+  
+  
 }
 
