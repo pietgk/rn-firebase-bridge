@@ -1,13 +1,13 @@
 {
   "name": "rn-firebase-bridge",
   "description": "React Native bridge to native Firebase SDK",
-  "version": "0.0.10",
+  "version": "0.1.1",
   "keywords": [
     "react-native",
     "firebase",
     "firebase-bridge"
   ],
-  "main": "FirebaseBridge",
+  "main": "firebase",
   "license": "MIT",
   "maintainers": [
     {

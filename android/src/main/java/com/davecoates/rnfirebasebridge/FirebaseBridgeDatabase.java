@@ -3,6 +3,7 @@ package com.davecoates.rnfirebasebridge;
 import android.support.annotation.Nullable;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.*;
 
 import java.lang.reflect.Method;
@@ -58,27 +59,33 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
     private WritableMap convertRef(DatabaseReference ref) {
 
         final WritableMap m = Arguments.createMap();
-        m.putString("key", ref.getKey());
+        String key = ref.getKey();
+        if (key == null) {
+            m.putString("key", "");
+        } else {
+            m.putString("key", ref.getKey());
+        }
         m.putString("locationUrl", ref.toString());
 
         return m;
     }
 
-    private DatabaseReference getRefFromUrl(String databaseUrl) {
+    private DatabaseReference getRefFromUrl(String appName, String databaseUrl) {
+        FirebaseApp app = FirebaseApp.getInstance(appName);
         if (databaseUrl == null) {
-            return FirebaseDatabase.getInstance().getReference();
+            return FirebaseDatabase.getInstance(app).getReference();
         }
-        return FirebaseDatabase.getInstance().getReferenceFromUrl(databaseUrl);
+        return FirebaseDatabase.getInstance(app).getReferenceFromUrl(databaseUrl);
     }
 
     @ReactMethod
-    public void child(String databaseUrl, String path, Promise promise) {
-        promise.resolve(convertRef(getRefFromUrl(databaseUrl).child(path)));
+    public void child(String appName, String databaseUrl, String path, Promise promise) {
+        promise.resolve(convertRef(getRefFromUrl(appName, databaseUrl).child(path)));
     }
 
     @ReactMethod
-    public void push(String databaseUrl, Promise promise) {
-        promise.resolve(convertRef(getRefFromUrl(databaseUrl).push()));
+    public void push(String appName, String databaseUrl, Promise promise) {
+        promise.resolve(convertRef(getRefFromUrl(appName, databaseUrl).push()));
     }
 
     /**
@@ -89,8 +96,8 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
      * @param value
      */
     @ReactMethod
-    public void setValue(String databaseUrl, ReadableArray value, final Promise promise) {
-        DatabaseReference ref = getRefFromUrl(databaseUrl);
+    public void setValue(String appName, String databaseUrl, ReadableArray value, final Promise promise) {
+        DatabaseReference ref = getRefFromUrl(appName, databaseUrl);
         Object v = null;
         switch(value.getType(0)) {
             case Null:
@@ -133,8 +140,8 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
      * @param value
      */
     @ReactMethod
-    public void setValueWithPriority(String databaseUrl, ReadableArray value, ReadableArray priority, final Promise promise) {
-        DatabaseReference ref = getRefFromUrl(databaseUrl);
+    public void setValueWithPriority(String appName, String databaseUrl, ReadableArray value, ReadableArray priority, final Promise promise) {
+        DatabaseReference ref = getRefFromUrl(appName, databaseUrl);
         Object v = null;
         switch(value.getType(0)) {
             case Null:
@@ -178,7 +185,7 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void setPriority(String databaseUrl, ReadableArray value, final Promise promise) {
+    public void setPriority(String appName, String databaseUrl, ReadableArray value, final Promise promise) {
         DatabaseReference.CompletionListener listener = new DatabaseReference.CompletionListener() {
             @Override
             public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
@@ -189,7 +196,7 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                 }
             }
         };
-        DatabaseReference ref = getRefFromUrl(databaseUrl);
+        DatabaseReference ref = getRefFromUrl(appName, databaseUrl);
         switch(value.getType(0)) {
             case Number:
                 ref.setPriority(value.getDouble(0), listener);
@@ -210,8 +217,8 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
      * @param promise
      */
     @ReactMethod
-    public void removeValue(String databaseUrl, final Promise promise) {
-        DatabaseReference ref = getRefFromUrl(databaseUrl);
+    public void removeValue(String appName, String databaseUrl, final Promise promise) {
+        DatabaseReference ref = getRefFromUrl(appName, databaseUrl);
         ref.removeValue(new DatabaseReference.CompletionListener() {
             @Override
             public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
@@ -225,8 +232,8 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void update(String databaseUrl, ReadableMap value, final Promise promise) {
-        DatabaseReference ref = getRefFromUrl(databaseUrl);
+    public void update(String appName, String databaseUrl, ReadableMap value, final Promise promise) {
+        DatabaseReference ref = getRefFromUrl(appName, databaseUrl);
         ref.updateChildren(((ReadableNativeMap)value).toHashMap(), new DatabaseReference.CompletionListener() {
             @Override
             public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
@@ -239,12 +246,24 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
         });
     }
 
-    private void sendEvent(String eventName,
-                         @Nullable WritableMap params) {
+    private void sendSnapshotEvent(String id, DataSnapshot snapshot) {
+        WritableMap params = Arguments.createMap();
+        params.putMap("snapshot", convertSnapshot(snapshot));
+        params.putString("id", id);
         ReactContext reactContext = getReactApplicationContext();
         reactContext
                 .getJSModule(RCTNativeAppEventEmitter.class)
-                .emit(eventName, params);
+                .emit("databaseOn", params);
+    }
+
+    private void sendSnapshotEvent(String id, DatabaseError error) {
+        WritableMap params = Arguments.createMap();
+        params.putString("error", error.getMessage());
+        params.putString("id", id);
+        ReactContext reactContext = getReactApplicationContext();
+        reactContext
+                .getJSModule(RCTNativeAppEventEmitter.class)
+                .emit("databaseOn", params);
     }
 
     private WritableArray convertSnapshotList(Iterable<DataSnapshot> values) {
@@ -337,6 +356,9 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
             case "java.lang.Boolean":
                 promise.resolve((Boolean)value);
                 break;
+            case "java.lang.Long":
+                promise.resolve(((Long)value).doubleValue());
+                break;
             case "java.lang.Integer":
                 promise.resolve((Integer)value);
                 break;
@@ -353,7 +375,7 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                 promise.resolve(convertSnapshotList(snapshot.getChildren()));
                 break;
             default:
-                promise.resolve(null);
+                promise.reject("unhandled_value_type", value.getClass().getName());
         }
     }
 
@@ -462,8 +484,8 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
 
     private Map<String, DatabaseReferenceListenerPair> listenersByUUID = new HashMap<>();
 
-    @ReactMethod Query queryRef(String databaseUrl, ReadableArray query) throws InvalidQueryException, InvalidQueryParametersException {
-        Query ref = getRefFromUrl(databaseUrl);
+    private Query queryRef(String appName, String databaseUrl, ReadableArray query) throws InvalidQueryException, InvalidQueryParametersException {
+        Query ref = getRefFromUrl(appName, databaseUrl);
         for (int i = 0; i< query.size(); i++) {
             ReadableArray queryDescriptor = query.getArray(i);
             String fnName = queryDescriptor.getString(0);
@@ -552,14 +574,14 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void on(String databaseUrl, final String eventType, ReadableArray query, Promise promise) {
+    public void on(String appName, String databaseUrl, final String eventType, ReadableArray query, Promise promise) {
         // This is the event name that will be fired on the JS side whenever
         // the Firebase event occurs. An event listener is registered here
         // which then fires the event on the JS bridge.
         final UUID uniqueEventName = UUID.randomUUID();
         Query ref;
         try {
-            ref = this.queryRef(databaseUrl, query);
+            ref = this.queryRef(appName, databaseUrl, query);
         } catch (InvalidQueryException e) {
             promise.reject("invalid_query", e.getMessage());
             return;
@@ -572,11 +594,12 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                 ValueEventListener listener = new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                        sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                     }
 
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
+                        sendSnapshotEvent(uniqueEventName.toString(), databaseError);
                     }
                 };
                 listenersByUUID.put(uniqueEventName.toString(), new DatabaseReferenceListenerPair(ref, listener));
@@ -591,34 +614,34 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                     @Override
                     public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                         if (eventType.equals("child_added")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                         }
                     }
 
                     @Override
                     public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                         if (eventType.equals("child_changed")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                         }
                     }
 
                     @Override
                     public void onChildRemoved(DataSnapshot dataSnapshot) {
                         if (eventType.equals("child_removed")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                         }
                     }
 
                     @Override
                     public void onChildMoved(DataSnapshot dataSnapshot, String s) {
                         if (eventType.equals("child_moved")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                         }
                     }
 
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
-
+                        sendSnapshotEvent(uniqueEventName.toString(), databaseError);
                     }
                 };
                 listenersByUUID.put(uniqueEventName.toString(), new DatabaseReferenceListenerPair(ref, childListener));
@@ -631,14 +654,14 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void once(String databaseUrl, final String eventType, ReadableArray query, Promise promise) {
+    public void once(String appName, String databaseUrl, final String eventType, ReadableArray query, Promise promise) {
         // This is the event name that will be fired on the JS side whenever
         // the Firebase event occurs. An event listener is registered here
         // which then fires the event on the JS bridge.
         final UUID uniqueEventName = UUID.randomUUID();
         final Query ref;
         try {
-            ref = this.queryRef(databaseUrl, query);
+            ref = this.queryRef(appName, databaseUrl, query);
         } catch (InvalidQueryException e) {
             promise.reject("invalid_query", e.getMessage());
             return;
@@ -651,11 +674,12 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                 ValueEventListener listener = new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                        sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                     }
 
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
+                        sendSnapshotEvent(uniqueEventName.toString(), databaseError);
                     }
                 };
                 new DatabaseReferenceListenerPair(ref, listener);
@@ -672,7 +696,7 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                     @Override
                     public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                         if (eventType.equals("child_added")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                             ref.removeEventListener(this);
                         }
                     }
@@ -680,7 +704,7 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                     @Override
                     public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                         if (eventType.equals("child_changed")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                             ref.removeEventListener(this);
                         }
                     }
@@ -688,7 +712,7 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                     @Override
                     public void onChildRemoved(DataSnapshot dataSnapshot) {
                         if (eventType.equals("child_removed")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                             ref.removeEventListener(this);
                         }
                     }
@@ -696,13 +720,14 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
                     @Override
                     public void onChildMoved(DataSnapshot dataSnapshot, String s) {
                         if (eventType.equals("child_moved")) {
-                            sendEvent(uniqueEventName.toString(), convertSnapshot(dataSnapshot));
+                            sendSnapshotEvent(uniqueEventName.toString(), dataSnapshot);
                             ref.removeEventListener(this);
                         }
                     }
 
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
+                        sendSnapshotEvent(uniqueEventName.toString(), databaseError);
                         ref.removeEventListener(this);
                     }
                 };
@@ -724,13 +749,14 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
         }
     }
 
-    static private boolean persistenceEnabled = false;
+    private Set<String> persistenceEnabled = new HashSet<>();
 
     @ReactMethod
-    public void setPersistenceEnabled(boolean enabled) {
-        if (FirebaseBridgeDatabase.persistenceEnabled != enabled) {
-            FirebaseBridgeDatabase.persistenceEnabled = enabled;
-            FirebaseDatabase.getInstance().setPersistenceEnabled(enabled);
+    public void setPersistenceEnabled(String appName, boolean enabled) {
+        if (!persistenceEnabled.contains(appName)) {
+            FirebaseApp app = FirebaseApp.getInstance(appName);
+            persistenceEnabled.add(appName);
+            FirebaseDatabase.getInstance(app).setPersistenceEnabled(enabled);
         }
     }
 
@@ -742,6 +768,52 @@ public class FirebaseBridgeDatabase extends ReactContextBaseJavaModule {
             return;
         }
         promise.resolve(snapshot.getKey());
+    }
+
+    @ReactMethod
+    public void refFromURL(String appName, String url, Promise promise) {
+        promise.resolve(convertRef(getRefFromUrl(appName, url)));
+    }
+
+    @ReactMethod
+    public void ref(String appName, String path, Promise promise) {
+        FirebaseApp app = FirebaseApp.getInstance(appName);
+        FirebaseDatabase db = FirebaseDatabase.getInstance(app);
+        DatabaseReference ref;
+        if (path ==null) {
+            ref = db.getReference();
+        } else {
+            ref = db.getReference(path);
+        }
+        promise.resolve(convertRef(ref));
+    }
+
+    @ReactMethod
+    public void parent(String appName, String url, Promise promise) {
+        DatabaseReference ref = getRefFromUrl(appName, url);
+        promise.resolve(convertRef(ref.getParent()));
+    }
+
+    @ReactMethod
+    public void root(String appName, String url, Promise promise) {
+        promise.resolve(convertRef(getRefFromUrl(appName, url).getRoot()));
+    }
+
+    @ReactMethod
+    public void sdkVersion(Promise promise) {
+        promise.resolve(FirebaseDatabase.getSdkVersion());
+    }
+
+    @ReactMethod
+    public void goOffline(String appName) {
+        FirebaseApp app = FirebaseApp.getInstance(appName);
+        FirebaseDatabase.getInstance(app).goOffline();
+    }
+
+    @ReactMethod
+    public void goOnline(String appName) {
+        FirebaseApp app = FirebaseApp.getInstance(appName);
+        FirebaseDatabase.getInstance(app).goOnline();
     }
 
 }
