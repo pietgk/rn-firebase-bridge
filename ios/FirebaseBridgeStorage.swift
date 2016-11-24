@@ -43,7 +43,7 @@ class FirebaseBridgeStorage: NSObject { //, RCTInvalidating {
 
   func convertStorageUrl(URL:NSURL) -> Dictionary<String, String> {
     return [
-      "storageUrl": URL.absoluteString
+      "storageUrl": URL.absoluteString!
     ]
   }
   
@@ -127,7 +127,7 @@ class FirebaseBridgeStorage: NSObject { //, RCTInvalidating {
   }
   
   func fileInDocumentsDirectoryUrl(filename: String) -> NSURL {
-    return getDocumentsURL().URLByAppendingPathComponent(filename)
+    return getDocumentsURL().URLByAppendingPathComponent(filename)!
   }
 }
 
