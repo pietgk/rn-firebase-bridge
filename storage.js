@@ -63,8 +63,10 @@ export class StorageReference {
         return RNFetchBlob.fs.exists(targetDir)
         .then(exists => {
             if (!exists) {
-              return RNFetchBlob.fs.mkdir(targetDir)
-              .then (() => result)
+                return RNFetchBlob.fs.mkdir(targetDir)
+                .then (() => result)
+                .catch(error => console.log(`storage.js prepareTargetPath ${error} ignored.`)) // TODO check already exist error
+                .then (() => result)
             } else {
                 return result;
             }
