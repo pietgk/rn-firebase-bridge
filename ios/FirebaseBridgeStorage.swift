@@ -69,6 +69,8 @@ class FirebaseBridgeStorage: NSObject { //, RCTInvalidating {
    * - localFileURL is file://local/images/island.jpg
    */
   @objc func writeToFile(storageFileUrl:String, localFileUrl:String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
+    // use storage.js::writeToFile implementation
+    
     let storageFileRef = getRefFromUrl(storageFileUrl)
     let localUrl = fileInDocumentsDirectoryUrl(localFileUrl)
     // debugPrint(localUrl)

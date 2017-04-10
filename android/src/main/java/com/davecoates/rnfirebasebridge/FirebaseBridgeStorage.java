@@ -64,7 +64,7 @@ public class FirebaseBridgeStorage extends ReactContextBaseJavaModule {
   
     @ReactMethod
     public void writeToFile(String storageUrl, String localFileUrl, Promise promise) {
-        promise.reject("write-to-file-not-implemented-for-android", "implemented only in iOS, implement android version yourself or use downloadUrlWithCompletion and for example react-native-fetch-blob.");
+        promise.reject("use storage.js writeToFile", "implemented in storage.js::writeToFile.");
     }
 
     // npm install --save react-native-fetch-blob

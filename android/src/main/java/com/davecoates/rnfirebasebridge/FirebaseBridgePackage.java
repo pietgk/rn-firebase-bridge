@@ -12,6 +12,8 @@ import com.facebook.react.uimanager.ViewManager;
 import com.facebook.react.bridge.JavaScriptModule;
 
 import com.davecoates.rnfirebasebridge.FirebaseBridgeAuth;
+import com.davecoates.rnfirebasebridge.FirebaseBridgeApp;
+import com.davecoates.rnfirebasebridge.FirebaseBridgeUser;
 import com.davecoates.rnfirebasebridge.FirebaseBridgeFacebookAuthProvider;
 import com.davecoates.rnfirebasebridge.FirebaseBridgeTwitterAuthProvider;
 import com.davecoates.rnfirebasebridge.FirebaseBridgeGoogleAuthProvider;
@@ -39,6 +41,8 @@ public class FirebaseBridgePackage implements ReactPackage {
     List<NativeModule> modules = new ArrayList<>();
 
     modules.add(new FirebaseBridgeAuth(reactContext));
+    modules.add(new FirebaseBridgeApp(reactContext));
+    modules.add(new FirebaseBridgeUser(reactContext));
     modules.add(new FirebaseBridgeFacebookAuthProvider(reactContext));
     modules.add(new FirebaseBridgeGoogleAuthProvider(reactContext));
     modules.add(new FirebaseBridgeTwitterAuthProvider(reactContext));
