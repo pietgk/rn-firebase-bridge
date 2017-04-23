@@ -147,10 +147,10 @@ RCT_EXTERN_METHOD(createUserWithEmail:(NSString)appName
 RCT_EXTERN_METHOD(signInWithEmail:(NSString)appName
                   email:NSString
                   password:NSString
-RCT_EXTERN_METHOD(signInAnonymously:(NSString)appName
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(signInAnonymously:(NSString)appName
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
