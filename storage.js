@@ -3,6 +3,7 @@ import { NativeModules, NativeAppEventEmitter } from 'react-native';
 import invariant from 'invariant';
 import type {
   StorageReference as StorageReferenceType,
+  App,
 } from './types';
 import RNFetchBlob from 'react-native-fetch-blob';
 
@@ -100,8 +101,15 @@ export class StorageReference {
     }
 }
 
-export default {
+export default class Storage {
+
+    app: App;
+
+    constructor(app:App) {
+        this.app = app;
+    }
+
     ref() {
         return new StorageReference();
-    },
+    }
 };

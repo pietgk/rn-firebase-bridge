@@ -4,6 +4,7 @@ import invariant from 'invariant';
 import type * as types from './types';
 import Database from './database';
 import Auth from './auth';
+import Storage from './storage';
 // See
 // https://firebase.google.com/docs/reference/js/firebase
 
@@ -62,6 +63,10 @@ class App {
         }
         return this.authInstance;
     }
+
+    storage() {
+        return new Storage(this);
+    }
 }
 
 function initializeApp(options, name?:string) : types.App {
@@ -87,6 +92,12 @@ function auth() : Auth {
     const app = initializeDefaultApp();
     return app.auth();
 }
+
+function storage() : Storage {
+    const app = initializeDefaultApp();
+    return app.storage();
+}
+
 auth.FacebookAuthProvider = Auth.FacebookAuthProvider;
 auth.GoogleAuthProvider = Auth.GoogleAuthProvider;
 auth.GithubAuthProvider = Auth.GithubAuthProvider;
@@ -95,6 +106,7 @@ auth.TwitterAuthProvider = Auth.TwitterAuthProvider;
 export default {
     database,
     auth,
+    storage,
     initializeApp,
     initializeDefaultApp,
 };
