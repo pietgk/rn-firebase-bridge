@@ -81,6 +81,12 @@ func authErrorCodeToString(code:FIRAuthErrorCode) -> String {
     return "auth/invalid-action-code"
   case .ErrorCodeExpiredActionCode:
     return "auth/expired-action-code"
+  case .ErrorCodeInvalidMessagePayload:
+    return "auth/invalid-message-payload";
+  case .ErrorCodeInvalidSender:
+    return "auth/invalid-sender";
+  case .ErrorCodeInvalidRecipientEmail:
+    return "auth/invalid-receipient-email";
   }
 }
 
